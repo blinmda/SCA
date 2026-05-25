@@ -5,10 +5,12 @@ import subprocess
 from collections import defaultdict
 import draw
 
+trivy_path = "trivy/trivy.exe"
+
 def run_trivy(src_dir, name, dev, vuln):
     output_file = f"{name}_sbom_tmp.json"
     cmd = [
-        "trivy/trivy.exe", "fs",
+        trivy_path, "fs",
         "--format", "cyclonedx",
         "--output", output_file,
         src_dir
