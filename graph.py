@@ -1,35 +1,8 @@
 import json
 import networkx as nx
 import matplotlib.pyplot as plt
-import subprocess
 from collections import defaultdict
 import draw
-
-trivy_path = "C:\\Users\\abmnild\\Desktop\\w\\trivy\\trivy.exe"
-
-def run_trivy(src_dir, name, dev, vuln):
-    output_file = f"{name}_sbom_tmp.json"
-    cmd = [
-        trivy_path, "fs",
-        "--format", "cyclonedx",
-        "--output", output_file,
-        src_dir
-    ]
-    if dev:
-        cmd.append("--include-dev-deps")
-    if vuln:
-        cmd.extend(["--scanners", "vuln"])
-
-    try:
-        subprocess.run(cmd, capture_output=True, text=True, check=True)
-        return output_file
-    except subprocess.CalledProcessError as e:
-        print(f"Ошибка при выполнении trivy: {e}")
-        print(f"stderr: {e.stderr}")
-        return None
-    except FileNotFoundError:
-        print("Ошибка: trivy не найден.")
-        return None
 
 def build_package_index(data, p_name, p_ver):
     id_to_label = {}

@@ -310,26 +310,16 @@ def extract_best_cvss_score(ratings):
     
     return None
    
-def parse_reports(src_dir, min_cvss, vuln):
+def parse_reports(sbom_path, ptai_path, min_cvss):
     all_results = []
 
-    pattern_ptai = os.path.join(src_dir, "Report*.html")
-    html_files = glob.glob(pattern_ptai)
-    
-    if html_files:
-        ptai_report_path = html_files[0]
-        ptai_results = parse_ptai(ptai_report_path)
+    if ptai_path:
+        ptai_results = parse_ptai(ptai_path)
         all_results.extend(ptai_results)
-    else:
-        print(f"В папке '{src_dir}' не найден файл отчета PT AI. Проверьте соответствие шаблону: Report*.html")
-    
-    if vuln:
-        print("Создание SBOM с уязвимостями...")
-        trivy_report_path = graph.run_trivy(src_dir, os.path.basename(os.path.normpath(src_dir)), True, vuln)
-        print("SBOM создан")
-        trivy_results = parse_trivy(trivy_report_path)
-        all_results.extend(trivy_results)
 
+    if sbom_path:
+        trivy_results = parse_trivy(sbom_path)
+        all_results.extend(trivy_results)
     
     unique = {}
     for name, cve_links_html, cvss in all_results:

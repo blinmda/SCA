@@ -32,14 +32,8 @@ def get_creds_by_host(host):
     else:
         return None
 
-def clone_repo(url, branch):
+def clone_repo(url, branch, clone):
     load_dotenv()
-
-    project_name = url.rstrip("/").split("/")[-1]
-    project_dir = f"./src/{project_name}"
-    if os.path.isdir(project_dir):
-        make_writable_recursive(project_dir)
-        shutil.rmtree(project_dir)
 
     parsed = urlparse(url)
     credentials = get_creds_by_host(parsed.netloc)
@@ -50,6 +44,15 @@ def clone_repo(url, branch):
         )
     else:
         result_url = f"{url}.git"
+
+    if not clone:
+        return result_url
+    
+    project_name = url.rstrip("/").split("/")[-1]
+    project_dir = f"./src/{project_name}"
+    if os.path.isdir(project_dir):
+        make_writable_recursive(project_dir)
+        shutil.rmtree(project_dir)
 
     print(f"Загрузка репозитория по ссылке {url}...")
     cmd = [
