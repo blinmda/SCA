@@ -1,7 +1,4 @@
-import json
 import networkx as nx
-import subprocess
-from collections import defaultdict
 import os
 from pyvis.network import Network
 

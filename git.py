@@ -5,7 +5,7 @@ import subprocess
 import os
 import stat
 
-git_path = "C:\\Users\\Kukoviakina_DA\\Desktop\\sca\\git\\bin\\git.exe"
+git_path = "C:\\Program Files\\Git\\bin\\git.exe"
 
 def make_writable_recursive(root_path):
     print(f"Удаление старой директории {root_path}...")

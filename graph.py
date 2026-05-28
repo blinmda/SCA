@@ -5,8 +5,7 @@ import subprocess
 from collections import defaultdict
 import draw
 
-trivy_path = "C:\\Users\\Kukoviakina_DA\\Desktop\\sca\\trivy\\trivy.exe"
-git_path = "C:\\Users\\Kukoviakina_DA\\Desktop\\sca\\git\\bin\\git.exe"
+trivy_path = "C:\\Users\\abmnild\\Desktop\\w\\trivy\\trivy.exe"
 
 def run_trivy(src_dir, name, dev, vuln):
     output_file = f"{name}_sbom_tmp.json"
