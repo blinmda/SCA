@@ -61,9 +61,9 @@ def visualize_graph(G, p_name):
     for node, data in G.nodes(data=True):
         level = node_levels.get(node, 0)
         if data.get('is_start'):
-            color = "#97C2FC"  # Светло-синий для корней 
+            color = "#97C2FC"  # Светло-синий для корней (start)
         elif data.get('is_sink'):
-             color = "#FF6B6B" # Красный для цели 
+             color = "#FF6B6B" # Красный для цели (sink)
              level = max_level + 1
         else:
             color = "#84DCC6"  # Бирюзовый для промежуточных
