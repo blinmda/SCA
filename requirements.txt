@@ -1,3 +1,5 @@
+dotenv
+requests
 bs4
 networkx
 pyvis

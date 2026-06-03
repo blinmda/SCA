@@ -1,81 +1,70 @@
+from dotenv import load_dotenv
 import argparse
-import glob
-import os
-import graph
-import report
-import git
-import trivy
-
-def cleanup_tmp_files(directory):
-    pattern = os.path.join(directory, "*_tmp*")
-    tmp_files = glob.glob(pattern)
-    if not tmp_files:
-        return
-    for file_path in tmp_files:
-        try:
-            os.remove(file_path)
-            print(f"Удален: {file_path}")
-        except OSError as e:
-            print(f"Ошибка при удалении {file_path}: {e}")
-
-
-def build_parser():
-    parser = argparse.ArgumentParser(description='SCA')
-    subparsers = parser.add_subparsers(dest='command', required=True)
-
-    def add_common_args(p):
-        group_src = p.add_mutually_exclusive_group(required=True)
-        group_src.add_argument('--dir', help='Путь к директории с исходным кодом')
-        group_src.add_argument('--repo', help='Ссылка на репозиторий git')
-        p.add_argument('--branch', help='Ветка git')
-        p.add_argument('--clone', action='store_true', help='Клонирование репозитория в файловую систему')
-        p.add_argument('--dev', action='store_true', help='Включение анализа devDependencies')
-        p.add_argument('--tmp', action='store_true', help='Отключение удаления временных файлов (sbom)')
-
-    report_parser = subparsers.add_parser('report', help='Формирование отчета')
-    add_common_args(report_parser)
-    report_parser.add_argument('--vuln', action='store_true', help='Использование SCA анализатора trivy')
-    report_parser.add_argument('--cvss', type=float, default=5, help='Нижняя граница CVSS (по умолчанию 5)')
-    report_parser.add_argument('--ptai', help='Путь к отчету PT AI')
-
-    graph_parser = subparsers.add_parser('graph', help='Построение графа для одной зависимости')
-    add_common_args(graph_parser)
-    graph_parser.add_argument('name', help='Имя пакета')
-    graph_parser.add_argument('version', help='Версия пакета')
-    graph_parser.add_argument('--interactive',  action='store_true', help='Создание интерактивно графа')
-    
-    return parser
+from commands.sbom import run_sbom_command
+from commands.upload import run_upload_command
+from commands.graph import run_graph_command
+from commands.report import run_report_command
+from core.config_loader import get_project_names
 
 def main():
-    parser = build_parser()
+    parser = argparse.ArgumentParser(description="SCA Security Framework CLI")
+    parser.add_argument("--show", action="store_true", help="Показать список доступных проектов")
+    
+    subparsers = parser.add_subparsers(dest="command", help="Доступные команды")
+
+    # --- КОМАНДА UPLOAD ---
+    upload_parser = subparsers.add_parser("upload", help="Загрузка SBOM в Dependency-Track")
+    upload_parser.add_argument("--name", type=str, help="Имя проекта для загрузки")
+
+    # --- КОМАНДА SBOM ---
+    sbom_parser = subparsers.add_parser("sbom", help="Генерация SBOM файла")
+    sbom_parser.add_argument("--dev", action="store_true", help="Включить анализ dev-зависимостей")
+    sbom_parser.add_argument("--vuln", action="store_true", help="Анализировать уязвимости в компонентах")
+    source_group = sbom_parser.add_mutually_exclusive_group()
+    source_group.add_argument = sbom_parser.add_argument("--dir", type=str, help="Путь до локальной директории")
+    source_group.add_argument = sbom_parser.add_argument("--repo", type=str, help="Ссылка на Git-репозиторий")
+    source_group.add_argument = sbom_parser.add_argument("--name", type=str, help="Имя проекта из json конфига")
+    sbom_parser.add_argument("--branch", type=str, help="Ветка репозитория (только с параметром --repo)")
+    sbom_parser.add_argument("--clone", action="store_true", help="Сохранить код в папку src (только с параметрами --repo и --name)")
+    sbom_parser.add_argument("--merge", action="store_true", help="Объединить отчеты, если у проекта несколько репозиториев (только с параметром --name)")
+
+    # --- КОМАНДА GRAPH ---
+    graph_parser = subparsers.add_parser("graph", help="Создание графа зависимостей")
+    graph_parser.add_argument("name", type=str, help="Имя пакета")
+    graph_parser.add_argument("version", type=str, help="Версия пакета")
+    graph_parser.add_argument("--sbom", type=str, required=True, help="Путь до сбома или директории со сбомами")
+    graph_parser.add_argument("--interactive", action="store_true", help="Сделать граф интерактивным (HTML)")
+
+    # --- КОМАНДА REPORT ---
+    report_parser = subparsers.add_parser("report", help="Создание отчета уязвимостей")
+    report_parser.add_argument("--sbom", type=str, required=True, help="Путь до сбома или директории со сбомами")
+    report_parser.add_argument("--ptai", type=str, help="Путь до отчета PT AI")
+    report_parser.add_argument("--cvss", type=float, default=5.0, help="Минимальный порог CVSS (по умолчанию 5.0)")
+
     args = parser.parse_args()
     
-    if args.repo:
-        src_dir = git.clone_repo(args.repo, args.branch, args.clone)
-    else:
-        src_dir = args.dir
+    if args.show:
+        for i, name in enumerate(get_project_names(), start=1):
+            print(f"{i}. {name}")
+        return
 
-    print("Создание sbom...")
-    if args.clone:
-        sbom_file = trivy.run_trivy_fs(src_dir, args.dev, args.vuln)
-    else:
-        sbom_file = trivy.run_trivy_git(src_dir, args.branch, args.dev, args.vuln)
-
-    if args.command == 'report':
-        print(f"REPORT: обработка {src_dir}")
+    if args.command == "upload":
+        run_upload_command(name=args.name)
         
-        data = report.parse_reports(sbom_file, args.ptai, args.cvss)
-        report.create_vulnerability_report(data, sbom_file, os.path.basename(os.path.normpath(src_dir)))
+    elif args.command == "sbom":
+        generated_files = run_sbom_command(
+            dev=args.dev, vuln=args.vuln, directory=args.dir,
+            repo=args.repo, branch=args.branch, clone=args.clone,
+            name=args.name, merge=args.merge
+        )
+        print(f"\nРезультаты сохранены в: {generated_files}")
         
-    elif args.command == 'graph':
-        print(f"GRAPH: обработка {src_dir}")
-        print(f"Имя пакета: {args.name}, Версия: {args.version}")
-
-        graph.build_tree(sbom_file, args.name, args.version, True, args.interactive)
-    
-    if not args.tmp:
-        cleanup_tmp_files(os.getcwd())
-    return 
+    elif args.command == "graph":
+        run_graph_command(pkg_name=args.name, pkg_version=args.version, sbom_path=args.sbom, interactive=args.interactive)
+        
+    elif args.command == "report":
+        run_report_command(sbom_path=args.sbom, min_cvss=args.cvss, ptai_path=args.ptai)
 
 if __name__ == "__main__":
+    load_dotenv()
     main()
