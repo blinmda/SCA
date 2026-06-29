@@ -34,6 +34,7 @@ def run_sbom_command(dev, vuln, directory, repo, branch, clone, name, merge):
         created_sboms = []
         sbom_file = None
         for git, br in repos_info:
+            print(f"Гит {git}")
             if clone:
                 target_dir = f"src/{project_name}"
                 dir = clone_repo(git, br, target_dir)
@@ -45,6 +46,7 @@ def run_sbom_command(dev, vuln, directory, repo, branch, clone, name, merge):
             
             out_path = os.path.join(project_folder, os.path.basename(tmp_path))
             shutil.move(tmp_path, out_path)
+            
             created_sboms.append(out_path)
 
         if len(created_sboms) > 1 and merge:
@@ -55,7 +57,7 @@ def run_sbom_command(dev, vuln, directory, repo, branch, clone, name, merge):
                 if os.path.exists(old_sbom):
                     os.remove(old_sbom)
                     created_sboms.remove(old_sbom)
-            
+
             created_sboms.append(sbom_file)
 
         return created_sboms

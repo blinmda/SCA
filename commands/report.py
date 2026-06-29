@@ -7,12 +7,14 @@ from core.dependency_tree import build_package_index, build_tree, format_paths_f
 
 def run_report_command(sbom_path, min_cvss, ptai_path):
     if os.path.isdir(sbom_path):
+        dir_name = os.path.basename(os.path.normpath(sbom_path))
+        os.makedirs(f"./reports/{dir_name}", exist_ok=True)
         for filename in os.listdir(sbom_path):
             file_path = os.path.join(sbom_path, filename)
             print(f"Обработка {file_path}")
             if os.path.isfile(file_path):
                 data = parse_reports(file_path, ptai_path, min_cvss)
-                create_vulnerability_report(data, file_path, f"./reports/vulnerability_report_{filename.split("_tmp")[0]}.html")
+                create_vulnerability_report(data, file_path, f"./reports/{dir_name}/vulnerability_report_{filename.split("_tmp")[0]}.html")
     else:
         print(f"Обработка {sbom_path}")
         data = parse_reports(sbom_path, ptai_path, min_cvss)

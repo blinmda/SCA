@@ -4,6 +4,7 @@ import subprocess
 def run_trivy(cmd):
     try:
         subprocess.run(cmd, capture_output=True, text=True, check=True)
+        print("SBOM создан (круто)")
         return True
     except subprocess.CalledProcessError as e:
         print(f"Ошибка при выполнении trivy: {e}")

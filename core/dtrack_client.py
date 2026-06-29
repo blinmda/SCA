@@ -3,6 +3,7 @@ import os
 
 def upload_sbom_dtrack(sbom_file, project_id):
     with open(sbom_file, "rb") as f:
+        print(f"Отправка {sbom_file}")
         response = requests.post(
             f"{os.getenv("DT_URL")}/api/v1/bom",
             headers={"X-Api-Key": os.getenv("DT_TOKEN")},

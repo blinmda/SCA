@@ -22,7 +22,8 @@ def get_creds_by_host(host):
         "git.setl.ru": os.getenv("GITLAB_CREDS"),
         "gitlabadm1.setl.ru": os.getenv("GITADM_CREDS"),
         "git3.setl.ru":  os.getenv("GIT3_CREDS"),
-        "github.com": os.getenv("GITHUB_CREDS")    
+        "github.com": os.getenv("GITHUB_CREDS"),
+        "gitsec.setl.ru": os.getenv("GITSEC_CREDS")      
     }
     if host in CONFIG:
         return CONFIG[host]
