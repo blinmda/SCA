@@ -69,12 +69,17 @@ def create_vulnerability_report(data, sbom_file, filename):
         if purl:
             fixed_version = get_fixed_version(purl)
 
+        relation = "Транзитивная"
+        if any(len(path) <= 2 for path in all_paths):
+            relation = "Прямая"
+
         items.append({
             'display_name_full': display_name_full,
             'cve_links_str': cve_links_str,
             'max_cvss': max_cvss,
             'dependency': dependency,
-            'fixed': fixed_version
+            'fixed': fixed_version,
+            'relation': relation
         })
 
     special_message = "Пакет не найден в SBOM. Возможно, это dev-зависимость, используйте параметр --dev."
@@ -92,7 +97,7 @@ def create_vulnerability_report(data, sbom_file, filename):
                 <td><pre>{item['cve_links_str']}</pre></td>
                 <td><pre>{item['max_cvss']}</pre></td>
                 <td><pre>{item['fixed']}</pre></td>
-                <td><pre>-</pre></td>
+                <td><pre>{item['relation']}</pre></td>
                 <td><pre>{item['dependency']}</pre></td>
             </tr>
         """
