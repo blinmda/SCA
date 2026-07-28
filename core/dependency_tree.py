@@ -10,7 +10,7 @@ def build_tree(sbom_file, p_name, p_ver):
     except json.JSONDecodeError as e:
         return f"Ошибка парсинга JSON: {e}"
     
-    id_to_label, app_ids, target_ids = build_package_index(data, p_name, p_ver) 
+    id_to_label, _, app_ids, target_ids = build_package_index(data, p_name, p_ver) 
     if not target_ids:
         return "Пакет не найден в SBOM. Возможно, это dev-зависимость, используйте параметр --dev."
     
@@ -26,6 +26,7 @@ def build_package_index(data, p_name, p_ver):
     id_to_label = {}
     app_ids = []
     target_ids = []
+    label_to_purl = {}
 
     for comp in data.get('components', []):
         bom_ref = comp.get('bom-ref')
@@ -45,13 +46,17 @@ def build_package_index(data, p_name, p_ver):
         else:
             id_to_label[bom_ref] = bom_ref
         
+        label = id_to_label[bom_ref]
+        if bom_ref.startswith("pkg:"):
+            label_to_purl[label] = bom_ref
+
         if comp.get('type') == 'application':
             app_ids.append(bom_ref)
         
         if name == p_name and version == p_ver:
             target_ids.append(bom_ref)
     
-    return id_to_label, app_ids, target_ids
+    return id_to_label, label_to_purl, app_ids, target_ids
 
 def build_dependency_graph(data):
     adj = defaultdict(list)

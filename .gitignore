@@ -1,2 +1,5 @@
 projects.json
 .env
+reports/
+sbom/
+src/

@@ -3,6 +3,7 @@ import json
 from collections import defaultdict
 from bs4 import BeautifulSoup
 from core.dependency_tree import build_package_index, build_tree, format_paths_for_console
+from core.get_version import get_fixed_version
 
 
 def run_report_command(sbom_path, min_cvss, ptai_path):
@@ -56,18 +57,24 @@ def create_vulnerability_report(data, sbom_file, filename):
     for item in data:
         display_name_full = item[0]  
         cve_links_str = item[1]      
-        max_cvss = item[2]             
+        max_cvss = item[2]      
+        purl = item[3]       
 
         component_name = display_name_full.split(' ')[0]
         version = display_name_full.split(' ')[1]
         all_paths, id_to_label = build_tree(sbom_file, component_name, version)
         dependency = format_paths_for_console(all_paths, id_to_label)
         
+        fixed_version = "-"
+        if purl:
+            fixed_version = get_fixed_version(purl)
+
         items.append({
             'display_name_full': display_name_full,
             'cve_links_str': cve_links_str,
             'max_cvss': max_cvss,
-            'dependency': dependency
+            'dependency': dependency,
+            'fixed': fixed_version
         })
 
     special_message = "Пакет не найден в SBOM. Возможно, это dev-зависимость, используйте параметр --dev."
@@ -77,13 +84,14 @@ def create_vulnerability_report(data, sbom_file, filename):
     normal_items.sort(key=lambda x: float(x['max_cvss'].replace(',', '.')), reverse=True)
     sorted_items = normal_items + special_items
 
+
     for item in sorted_items:
         html_content += f"""
             <tr>
                 <td><pre>{item['display_name_full']}</pre></td>
                 <td><pre>{item['cve_links_str']}</pre></td>
                 <td><pre>{item['max_cvss']}</pre></td>
-                <td><pre>-</pre></td>
+                <td><pre>{item['fixed']}</pre></td>
                 <td><pre>-</pre></td>
                 <td><pre>{item['dependency']}</pre></td>
             </tr>
@@ -150,7 +158,7 @@ def simple_sca(item):
     else:
         max_cvss = "-"
 
-    return [display_name_full, cve_links_str, max_cvss]
+    return [display_name_full, cve_links_str, max_cvss, None]
     
 def extended_sca(item):
     display_name_full = item.get("Type", {}).get("DisplayName", "")
@@ -199,7 +207,7 @@ def extended_sca(item):
     else:
         max_cvss = "-"
 
-    return [display_name_full, cve_links_str, max_cvss]
+    return [display_name_full, cve_links_str, max_cvss, None]
 
 def parse_ptai(report_path):
     result = []
@@ -236,7 +244,7 @@ def parse_trivy(report_path):
         print(f"Некорректный JSON файл по пути {report_path}")
         return result
     
-    id_to_label, _, _ = build_package_index(data, None, None)
+    id_to_label, label_to_purl, _, _ = build_package_index(data, None, None)
 
     components_vulns = defaultdict(lambda: {
         "cve_links": set(), 
@@ -286,7 +294,7 @@ def parse_trivy(report_path):
         else:
             max_cvss = "-"
         
-        result.append([component_name, cve_links_str, max_cvss])
+        result.append([component_name, cve_links_str, max_cvss, label_to_purl.get(component_name)])
     
     return result
 
@@ -338,7 +346,7 @@ def parse_reports(sbom_path, ptai_path, min_cvss):
         all_results.extend(trivy_results)
     
     unique = {}
-    for name, cve_links_html, cvss in all_results:
+    for name, cve_links_html, cvss, purl in all_results:
         if cvss == "-" or cvss is None:
             continue
         try:
@@ -346,7 +354,7 @@ def parse_reports(sbom_path, ptai_path, min_cvss):
             if cvss_float < min_cvss:
                 continue
             if name not in unique:
-                 unique[name] = {"cve_links": [], "cve_ids_seen": set(), "cvss": cvss_float}
+                 unique[name] = {"cve_links": [], "cve_ids_seen": set(), "cvss": cvss_float, "purl": purl}
             
             if cve_links_html and cve_links_html != "-":
                 for c in cve_links_html.split("\n"):
@@ -365,7 +373,7 @@ def parse_reports(sbom_path, ptai_path, min_cvss):
     for name, data in unique.items():
         cve_links_html = "\n".join(data["cve_links"]) if data["cve_links"] else "-"
         cvss_str = str(data["cvss"]).replace(".", ",")
-        filtered_results.append([name, cve_links_html, cvss_str])
+        filtered_results.append([name, cve_links_html, cvss_str, data["purl"]])
 
 
     return filtered_results
