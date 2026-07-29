@@ -45,6 +45,14 @@ def query_osv_purl(purl):
     return r.json().get("vulns", [])
 
 
+def split_version(version):
+    version = version.lstrip("vV")
+    parts = version.split(".")
+    major = int(parts[0])
+    minor = int(parts[1]) if len(parts) > 1 else 0
+    return major, minor
+
+
 def first_fixed_version(vuln, current_version):
     candidates = []
 
@@ -62,13 +70,10 @@ def first_fixed_version(vuln, current_version):
     if not candidates:
         return None
     
-    try:
-        major_version = Version(current_version).major
-    except InvalidVersion:
-        major_version = int(current_version.split(".", 1)[0])
+    major_version, minor_version = split_version(current_version)
 
     same_major = sorted (v for v in candidates
-                         if v.major == major_version)
+                         if v.major == major_version and v.minor >= minor_version)
     if same_major:
         return same_major[0]
 
