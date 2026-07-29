@@ -32,6 +32,7 @@ def build_package_index(data, p_name, p_ver):
         bom_ref = comp.get('bom-ref')
         if not bom_ref:
             continue
+        purl = comp.get('purl')
         group = comp.get('group', '')
         name = comp.get('name', '???')
         version = comp.get('version', '')
@@ -47,8 +48,10 @@ def build_package_index(data, p_name, p_ver):
             id_to_label[bom_ref] = bom_ref
         
         label = id_to_label[bom_ref]
-        if bom_ref.startswith("pkg:"):
-            label_to_purl[label] = bom_ref
+        if purl:
+            label_to_purl[label] = purl
+        elif bom_ref.startswith("pkg:"):
+            label_to_purl[label] = bom_ref 
 
         if comp.get('type') == 'application':
             app_ids.append(bom_ref)
