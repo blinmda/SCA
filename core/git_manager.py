@@ -3,6 +3,7 @@ from urllib.parse import urlparse
 import subprocess
 import os
 import stat
+import json
 
 def make_writable_recursive(root_path):
     print(f"Удаление старой директории {root_path}...")
@@ -18,15 +19,10 @@ def make_writable_recursive(root_path):
     os.chmod(root_path, os.stat(root_path).st_mode | stat.S_IWRITE)
 
 def get_creds_by_host(host):
-    CONFIG = {
-        "git.setl.ru": os.getenv("GITLAB_CREDS"),
-        "gitlabadm1.setl.ru": os.getenv("GITADM_CREDS"),
-        "git3.setl.ru":  os.getenv("GIT3_CREDS"),
-        "github.com": os.getenv("GITHUB_CREDS"),
-        "gitsec.setl.ru": os.getenv("GITSEC_CREDS")      
-    }
-    if host in CONFIG:
-        return CONFIG[host]
+    config_json = os.getenv("CREDS_MAPPING", "{}")
+    config = json.loads(config_json)
+    if host in config:
+        return config[host]
     else:
         return None
 
