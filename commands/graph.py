@@ -7,6 +7,8 @@ from core.dependency_tree import build_tree, format_paths_for_console
 
 def run_graph_command(p_name, p_ver, sbom_file, interactive):
     all_paths, id_to_label = build_tree(sbom_file, p_name, p_ver)
+    if not all_paths or not id_to_label:
+        exit()
     result_string = format_paths_for_console(all_paths, id_to_label)
     
     if all_paths:

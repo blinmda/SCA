@@ -69,7 +69,7 @@ def first_fixed_version(vuln, current_version):
 
     if not candidates:
         return None
-    
+
     major_version, minor_version = split_version(current_version)
 
     same_major = sorted (v for v in candidates

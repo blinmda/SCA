@@ -63,6 +63,8 @@ def create_vulnerability_report(data, sbom_file, filename):
         component_name = display_name_full.split(' ')[0]
         version = display_name_full.split(' ')[1]
         all_paths, id_to_label = build_tree(sbom_file, component_name, version)
+        if not all_paths or not id_to_label:
+            continue
         dependency = format_paths_for_console(all_paths, id_to_label)
         
         fixed_version = "-"

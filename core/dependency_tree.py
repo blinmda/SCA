@@ -6,19 +6,24 @@ def build_tree(sbom_file, p_name, p_ver):
         with open(sbom_file, 'r', encoding='utf-8') as f:
             data = json.load(f)
     except FileNotFoundError:
-        return f"Файл {sbom_file} не найден."
+        print(f"Файл {sbom_file} не найден.")
+        return False, False
     except json.JSONDecodeError as e:
-        return f"Ошибка парсинга JSON: {e}"
+        print(f"Ошибка парсинга JSON: {e}")
+        return False, False
+
     
     id_to_label, _, app_ids, target_ids = build_package_index(data, p_name, p_ver) 
     if not target_ids:
-        return "Пакет не найден в SBOM. Возможно, это dev-зависимость, используйте параметр --dev."
+        print("Пакет не найден в SBOM. Возможно, это dev-зависимость, используйте параметр --dev.")
+        return False, False  
     
     adj = build_dependency_graph(data)
     all_paths = find_all_paths_to_target(adj, app_ids, target_ids)
     
     if not all_paths:
-        return "Пути не найдены."
+        print("Пути не найдены.")
+        return False, False
     
     return all_paths, id_to_label
 
@@ -51,7 +56,7 @@ def build_package_index(data, p_name, p_ver):
         if purl:
             label_to_purl[label] = purl
         elif bom_ref.startswith("pkg:"):
-            label_to_purl[label] = bom_ref 
+            label_to_purl[label] = bom_ref    
 
         if comp.get('type') == 'application':
             app_ids.append(bom_ref)
